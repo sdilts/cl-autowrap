@@ -183,7 +183,7 @@
   :pointer)
 
 (defmethod basic-foreign-type ((type foreign-record))
-  (if (foreign-scalar-p type)
+  (if (and (foreign-scalar-p type))
       (let ((largest-field (reduce (lambda (x y)
                                      (if (> (frf-bit-size x) (frf-bit-size y)) x y))
                                    (foreign-record-fields type))))
@@ -214,7 +214,7 @@
   (foreign-scalar-p (foreign-type field)))
 
 (defmethod foreign-scalar-p ((type foreign-record))
-  (when (eq :union (foreign-type type))
+  (when (and (eq :union (foreign-type type)) (foreign-record-fields type))
        (every #'foreign-scalar-p (foreign-record-fields type))))
 
 (defmethod foreign-scalar-p ((type list))
@@ -287,7 +287,7 @@ vs anything else (including enums)."
 (defmethod foreign-qualified-name ((type foreign-pointer))
   `(:pointer ,(foreign-qualified-name (foreign-type type))))
 
- ;; defining things
+ ;; defining things
 
 (defun define-foreign-type (name type)
   "Trivially define a foreign type given `NAME` and a `foreign-type` object,
@@ -502,7 +502,7 @@ Create a type from `TYPESPEC` and return the `TYPE` structure representing it."
       (:pointer
        (define-foreign-type
            `(:pointer ,(cadr typespec))
-           (if-let (basic-type (looks-like-a-string typespec))
+          (if-let (basic-type (looks-like-a-string typespec))
              (make-instance 'foreign-string :type basic-type)
              (make-instance 'foreign-pointer :type (%ensure-type (cadr typespec) context-format-control context-format-args)))))
       (:void :void))))
